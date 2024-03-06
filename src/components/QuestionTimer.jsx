@@ -17,21 +17,20 @@ export default function QuestionTimer({refreshTime, duration, onTimeout, questio
 
     useEffect(() => {
         console.log('QuestionTimer - setting up interval');
-        const timer = setInterval(() => {
+        const interval = setInterval(() => {
             setRemainingTime((currentTime) => {
                 const newTtime = currentTime - refreshTime;
                 //console.log('Question timer: ' + newTtime + ' left' );
                 if(newTtime <= 0){
                     console.log('QuestionTimer - Clearing interval for question ' + questionId);
-                    clearInterval(timer);                    
+                    clearInterval(interval);                    
                 }
                 return newTtime;
             });
         }, refreshTime);
 
         return () => {
-            clearInterval(timer); 
-            //setRemainingTime(duration);
+            clearInterval(interval);
         }
     }, [questionId]);
 

@@ -3,45 +3,44 @@ import QuestionTimer from './QuestionTimer'
 import QUESTIONS from '../questions.js'
 import quiz_complete from '../assets/quiz-complete.png'
 
-const QUESTIONS_shuffles = QUESTIONS.sort(() => 1); //Math.random() - 0.5);
+const QUESTIONS_shuffles = QUESTIONS.sort(() => Math.random() - 0.5);
 console.log(QUESTIONS_shuffles);
 
 export default function Quiz(){
-    const [appState, setAppState] = useState({
-        activeQuestionIndex: 0,
-        answers: []
-    });
+
+    const [activeQuestionIndex, setActiveQuestionIndex] = useState(0);
+    const [answers, setAnswers] = useState([]);
+    const [answerState, setAnswerState] = useState('');    
+
+    const quizFinished = activeQuestionIndex < 0.
+    const question = !quizFinished ? QUESTIONS_shuffles[activeQuestionIndex] : null;
     
-    const quizFinished = appState.activeQuestionIndex < 0.
-    const question = !quizFinished ? QUESTIONS_shuffles[appState.activeQuestionIndex] : null;
-
-    const questionAnswered = useCallback( function questionAnswered(selectedAnswer){
-        console.log('Quiz - You selected: ' + QUESTIONS_shuffles[appState.activeQuestionIndex].id + ' - ' + selectedAnswer)
+    const handleSelectAnswer = useCallback(function handleSelectAnswer(selectedAnswer){
         
-        setNextQuestion(selectedAnswer);
-    });
+        const currentQuestion = QUESTIONS_shuffles[activeQuestionIndex];
+        
+        setAnswerState('answered');
+        setAnswers(previousAnswers => {
+             return [...previousAnswers, {'id': currentQuestion.id, 'text': selectedAnswer}]
+        })
 
-    const questionTimeout = useCallback(function questionTimeout(){
-        console.log('Quiz - Time\'s up, you didnt answer question ' + QUESTIONS_shuffles[appState.activeQuestionIndex].id);
-        setNextQuestion('');
-    }, [setNextQuestion]);
-
-    function setNextQuestion(selectedAnswer){
-        setAppState((previousAppState) => {
-            const nextQuestionIndex = previousAppState.activeQuestionIndex < (QUESTIONS_shuffles.length - 1) ? previousAppState.activeQuestionIndex + 1 : -1;
-            
-            if(nextQuestionIndex >= 0)
-                console.log('Quiz - Setting next question: ' + QUESTIONS_shuffles[nextQuestionIndex].id);
-            else
-                console.log('Quiz - This was the last question');
-
-            const currentQuestion = QUESTIONS_shuffles[appState.activeQuestionIndex];
-            return{
-                activeQuestionIndex: nextQuestionIndex, 
-                answers: [...previousAppState.answers, {'id': currentQuestion.id, 'text': selectedAnswer}]
+        //setTimeout(() => {
+            if ( selectedAnswer === currentQuestion.answers[0]){
+                setAnswerState('correct');
             }
-        });
-    }
+            else{
+                setAnswerState('wrong');
+            }
+
+            setTimeout(() => {
+                const nextQuestionIndex = activeQuestionIndex < (QUESTIONS_shuffles.length - 1) ? activeQuestionIndex + 1 : -1;
+                setActiveQuestionIndex(nextQuestionIndex);
+                setAnswerState('');
+            }, 2000);
+        //}, 1000)
+    }, [activeQuestionIndex]);
+
+    const handleSkipAnswer = useCallback(() => handleSelectAnswer(''), [handleSelectAnswer]);
 
     return(
         <div id="quiz">
@@ -52,15 +51,26 @@ export default function Quiz(){
                             key={question.id} 
                             refreshTime={10} 
                             duration={3000} 
-                            onTimeout={questionTimeout} 
+                            onTimeout={handleSkipAnswer} 
                             questionId={question.id} />
                         <h2>{question.text}</h2>
                         <ol id="answers">
-                            {question.answers.map((answer, index) => (
-                                <li className="answer" key={index}>
-                                    <button onClick={() => questionAnswered(answer)}>{answer}</button>
-                                </li>
-                            ))}
+
+                            {question.answers.map((answer, index) => {
+                                let className = '';
+                                if(answerState === 'correct')
+                                    className = 'correct'
+                                else if(answerState === 'wrong')
+                                    className = 'wrong'
+                                else if(answerState === 'answered')
+                                    className = ''
+
+                                return (
+                                    <li className="answer" key={index}>
+                                        <button className={className} onClick={() => handleSelectAnswer(answer)}>{answer}</button>
+                                    </li>
+                                )
+                            })}
                         </ol>
                     </>
                 )}
@@ -69,7 +79,7 @@ export default function Quiz(){
                         <img src={quiz_complete} alt="Quiz is finished" />
                         <h2>Your Answers</h2>
                         <ol>
-                            {appState.answers.map(answer => (
+                            {answers.map(answer => (
                                 <li key={answer.id}>{answer.id} - {answer.text}</li>
                             ))}
                         </ol>
